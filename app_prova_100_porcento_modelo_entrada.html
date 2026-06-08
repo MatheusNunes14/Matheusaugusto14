@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App Prova Final 100%</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#ececec;color:#111827}
+header{background:#111827;color:white;text-align:center;padding:16px}
+main{max-width:1180px;margin:auto;padding:12px}
+.card{background:white;border:1px solid #ddd;border-radius:12px;padding:14px;margin:12px 0}
+.tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px}
+.tabs button{background:#e5e7eb;color:#111827}
+.tabs button.active{background:#2563eb;color:white}
+button{width:100%;padding:10px;border:0;border-radius:8px;background:#2563eb;color:white;font-weight:bold;font-size:15px;margin-top:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+input,select{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px}
+.folha{background:#fffdf7;border:1px solid #ccc;border-radius:8px;padding:14px}
+.duas{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:850px){.duas{grid-template-columns:1fr}}
+.item{border-left:4px solid #444;padding-left:10px;margin:10px 0}
+.formula{font-family:"Times New Roman",serif;font-size:19px;background:#f3f4f6;padding:8px;border-radius:8px;margin:6px 0;overflow:auto}
+canvas{width:100%;max-width:980px;display:block;margin:auto;background:#fffdf7;border:1px solid #ddd;border-radius:8px}
+.hide{display:none!important}
+.small{color:#666;font-size:13px}
+.modeloEntrada{background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px;margin:10px 0}.modeloEntrada code{font-size:16px}
+table{border-collapse:collapse;width:100%;margin:8px 0;background:white}
+td,th{border:1px solid #333;padding:6px;text-align:center}
+</style>
+</head>
+<body>
+<header>
+<h1>Prova — Versão Final 100%</h1>
+<div>Q3 a Q8 no formato do gabarito da professora</div>
+</header>
+
+<main>
+<div class="card">
+<div class="tabs">
+<button id="btn-q3" class="active" onclick="setQ('q3')">Q3 Trig.</button>
+<button id="btn-q4" onclick="setQ('q4')">Q4 Trig.</button>
+<button id="btn-q5" onclick="setQ('q5')">Q5 Parábola</button>
+<button id="btn-q6" onclick="setQ('q6')">Q6 Elipse</button>
+<button id="btn-q7" onclick="setQ('q7')">Q7 Hipérbole</button>
+<button id="btn-q8" onclick="setQ('q8')">Q8 Esfera</button>
+</div>
+</div>
+
+<div class="card" id="entrada"></div>
+
+<div class="card folha">
+<h2>Resolução</h2>
+<div id="resolucao"></div>
+</div>
+
+<div class="card folha">
+<h2>Gráfico</h2>
+<canvas id="canvas" width="980" height="760"></canvas>
+<button onclick="baixar()">Baixar gráfico</button>
+</div>
+</main>
+
+<script>
+let q="q3";
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+function $(id){return document.getElementById(id)}
+function n(id){return Number($(id).value)}
+function fmt(x){if(!isFinite(x))return "?"; if(Math.abs(x)<1e-10)x=0; let y=Math.round(x*1000)/1000; return Number.isInteger(y)?String(y):String(y)}
+function fsign(x){return x>=0?"+ "+fmt(x):"- "+fmt(Math.abs(x))}
+function coord(x,y){return `(${fmt(x)}, ${fmt(y)})`}
+function coord3(x,y,z){return `(${fmt(x)}, ${fmt(y)}, ${fmt(z)})`}
+function centerTerm(v,h){return h===0?v:`(${v} ${h>=0?'-':'+'} ${fmt(Math.abs(h))})`}
+function radicalB(v){if(Math.abs(v-8)<1e-9)return "2√2"; return fmt(Math.sqrt(v))}
+function setQ(x){
+ q=x;
+ ["q3","q4","q5","q6","q7","q8"].forEach(id=>$("btn-"+id).classList.remove("active"));
+ $("btn-"+x).classList.add("active");
+ montar(); resolver();
+}
+
+function montar(){
+ let h="";
+ if(q==="q3"){
+  h=`<h2>Q3 — Relações Fundamentais</h2>
+  <div class="modeloEntrada"><b>Modelo da questão:</b><br>
+  Complete as relações fundamentais e marque os ângulos notáveis no círculo trigonométrico.</div>
+  <p class="small">Resposta fixa: fórmulas e ângulos notáveis.</p>
+  <button onclick="resolver()">Resolver</button>`;
+ }
+ if(q==="q4"){
+  h=`<h2>Q4 — Funções trigonométricas</h2>
+  <div class="modeloEntrada"><b>Modelo da questão:</b><br>
+  <code>f(x) = c·cos(k(x-a)) + b</code><br>
+  ou<br>
+  <code>f(x) = c·sen(k(x-a)) + b</code><br><br>
+  Exemplo: <code>f(x) = -cos 2(x - π/2) - 4</code></div>
+  <label>Escolha uma função
+  <select id="func">
+    <option value="cos">I) f(x) = -cos 2(x - π/2) - 4</option>
+    <option value="sen">II) f(x) = -3sen 2(x - π) + 3</option>
+  </select></label>
+  <button onclick="resolver()">Resolver</button>`;
+ }
+ if(q==="q5"){
+  h=`<h2>Q5 — Parábola</h2>
+  <div class="modeloEntrada"><b>Modelo de entrada:</b><br>
+  <code>Ax² + Cy² + Dx + Ey + F = 0</code><br><br>
+  Exemplo da questão:<br>
+  <code>y² - 16x + 2y + 49 = 0</code></div>
+  <div class="grid">
+  <label>A<input id="A" type="number" value="0" step="any"></label>
+  <label>C<input id="C" type="number" value="1" step="any"></label>
+  <label>D<input id="D" type="number" value="-16" step="any"></label>
+  <label>E<input id="E" type="number" value="2" step="any"></label>
+  <label>F<input id="F" type="number" value="49" step="any"></label>
+  </div><button onclick="resolver()">Resolver</button>`;
+ }
+ if(q==="q6"){
+  h=`<h2>Q6 — Elipse</h2>
+  <div class="modeloEntrada"><b>Modelo de entrada:</b><br>
+  <code>F1=(x1,y1)</code><br>
+  <code>F2=(x2,y2)</code><br>
+  <code>A1A2 = eixo maior</code><br><br>
+  Exemplo da questão:<br>
+  <code>F1=(2,-1), F2=(2,5), A1A2=10</code></div>
+  <div class="grid">
+  <label>F₁ x<input id="f1x" type="number" value="2" step="any"></label>
+  <label>F₁ y<input id="f1y" type="number" value="-1" step="any"></label>
+  <label>F₂ x<input id="f2x" type="number" value="2" step="any"></label>
+  <label>F₂ y<input id="f2y" type="number" value="5" step="any"></label>
+  <label>Eixo maior A₁A₂<input id="eixo" type="number" value="10" step="any"></label>
+  </div><button onclick="resolver()">Resolver</button>`;
+ }
+ if(q==="q7"){
+  h=`<h2>Q7 — Hipérbole</h2>
+  <div class="modeloEntrada"><b>Modelo de entrada:</b><br>
+  <code>V1=(x1,y1)</code><br>
+  <code>V2=(x2,y2)</code><br>
+  <code>F=(xf,yf)</code><br><br>
+  Exemplo da questão:<br>
+  <code>V1=(3,-2), V2=(5,-2), F=(7,-2)</code></div>
+  <div class="grid">
+  <label>Vértice 1 x<input id="v1x" type="number" value="3" step="any"></label>
+  <label>Vértice 1 y<input id="v1y" type="number" value="-2" step="any"></label>
+  <label>Vértice 2 x<input id="v2x" type="number" value="5" step="any"></label>
+  <label>Vértice 2 y<input id="v2y" type="number" value="-2" step="any"></label>
+  <label>Foco dado x<input id="fx" type="number" value="7" step="any"></label>
+  <label>Foco dado y<input id="fy" type="number" value="-2" step="any"></label>
+  </div><button onclick="resolver()">Resolver</button>`;
+ }
+ if(q==="q8"){
+  h=`<h2>Q8 — Esfera</h2>
+  <div class="modeloEntrada"><b>Modelo de entrada:</b><br>
+  <code>Centro=(h,k,l)</code><br>
+  <code>Raio=r</code><br><br>
+  Exemplo da questão:<br>
+  <code>Centro=(2,-3,4), Raio=2</code></div>
+  <div class="grid">
+  <label>Centro x<input id="cx" type="number" value="2" step="any"></label>
+  <label>Centro y<input id="cy" type="number" value="-3" step="any"></label>
+  <label>Centro z<input id="cz" type="number" value="4" step="any"></label>
+  <label>Raio<input id="r" type="number" value="2" step="any"></label>
+  </div><button onclick="resolver()">Resolver</button>`;
+ }
+ $("entrada").innerHTML=h;
+}
+function resolver(){
+ if(q==="q3")q3();
+ if(q==="q4")q4();
+ if(q==="q5")q5();
+ if(q==="q6")q6();
+ if(q==="q7")q7();
+ if(q==="q8")q8();
+}
+
+/* canvas helpers */
+function rawLine(x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function text(s,x,y,size=14,align="left"){ctx.save();ctx.font=size+"px Arial";ctx.fillStyle="#111827";ctx.textAlign=align;ctx.fillText(s,x,y);ctx.restore()}
+function arrow(x1,y1,x2,y2){
+ rawLine(x1,y1,x2,y2);
+ const a=Math.atan2(y2-y1,x2-x1),s=9;
+ ctx.beginPath();ctx.moveTo(x2,y2);
+ ctx.lineTo(x2-s*Math.cos(a-Math.PI/6),y2-s*Math.sin(a-Math.PI/6));
+ ctx.moveTo(x2,y2);
+ ctx.lineTo(x2-s*Math.cos(a+Math.PI/6),y2-s*Math.sin(a+Math.PI/6));
+ ctx.stroke();
+}
+function world(range){
+ const W=canvas.width,H=canvas.height,margin=78;
+ const scale=(Math.min(W,H)-2*margin)/(2*range);
+ return {W,H,range,scale,px:x=>W/2+x*scale,py:y=>H/2-y*scale}
+}
+function base(range,title){
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.fillStyle="#fffdf7";ctx.fillRect(0,0,canvas.width,canvas.height);
+ const w=world(range);
+ ctx.save();ctx.strokeStyle="#eadfca";ctx.lineWidth=1;
+ for(let i=-range;i<=range;i++){rawLine(w.px(i),w.py(-range),w.px(i),w.py(range));rawLine(w.px(-range),w.py(i),w.px(range),w.py(i))}
+ ctx.restore();
+ ctx.save();ctx.strokeStyle="#111827";ctx.lineWidth=2;arrow(w.px(-range),w.py(0),w.px(range),w.py(0));arrow(w.px(0),w.py(-range),w.px(0),w.py(range));ctx.restore();
+ text("x",w.px(range)-18,w.py(0)-10,16);text("y",w.px(0)+10,w.py(range)+20,16);
+ ctx.save();ctx.strokeStyle="#111827";ctx.fillStyle="#111827";ctx.font="11px Arial";
+ const step=range>10?2:1;
+ ctx.textAlign="center";for(let i=-range;i<=range;i+=step){if(i===0)continue;rawLine(w.px(i),w.py(0)-4,w.px(i),w.py(0)+4);ctx.fillText(String(i),w.px(i),w.py(0)+17)}
+ ctx.textAlign="right";for(let i=-range;i<=range;i+=step){if(i===0)continue;rawLine(w.px(0)-4,w.py(i),w.px(0)+4,w.py(i));ctx.fillText(String(i),w.px(0)-8,w.py(i)+4)}
+ ctx.fillText("0",w.px(0)-7,w.py(0)+15);ctx.restore();
+ text(title,20,32,20);
+ return w;
+}
+function curve(w,pts){
+ ctx.save();ctx.strokeStyle="#111827";ctx.lineWidth=2.7;ctx.beginPath();
+ pts.forEach((p,i)=>{let x=w.px(p[0]),y=w.py(p[1]);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
+ ctx.stroke();ctx.restore();
+}
+function lineW(w,x1,y1,x2,y2,label="",dash=false,dx=8,dy=-8){
+ ctx.save();ctx.strokeStyle="#111827";ctx.lineWidth=1.6;if(dash)ctx.setLineDash([7,6]);rawLine(w.px(x1),w.py(y1),w.px(x2),w.py(y2));ctx.restore();
+ if(label)text(label,(w.px(x1)+w.px(x2))/2+dx,(w.py(y1)+w.py(y2))/2+dy,13);
+}
+function point(w,x,y,label,dx=8,dy=-8){
+ const px=w.px(x),py=w.py(y);ctx.save();ctx.fillStyle="#111827";ctx.beginPath();ctx.arc(px,py,4.5,0,Math.PI*2);ctx.fill();ctx.restore();text(label,px+dx,py+dy,13);
+}
+function pointScreen(x,y,label,dx=8,dy=-8){
+ ctx.save();ctx.fillStyle="#111827";ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();ctx.restore();if(label)text(label,x+dx,y+dy,13)
+}
+
+/* Q3 */
+function q3(){
+ $("resolucao").innerHTML=`<div class="duas"><div>
+ <div class="item"><b>a) Fórmulas preenchidas</b>
+ <table>
+ <tr><td>tg x = sen x / cos x</td><td>cotg x = 1/tg x</td><td rowspan="2">cos²x = 1/(1+tg²x)</td></tr>
+ <tr><td>sec x = 1/cos x</td><td>sec²x = 1 + tg²x</td></tr>
+ <tr><td>cotg x = cos x / sen x</td><td>cossec²x = 1 + cotg²x</td><td rowspan="2">sen²x = tg²x/(1+tg²x)</td></tr>
+ <tr><td>cossec x = 1/sen x</td><td>1 = sen²x + cos²x</td></tr>
+ </table>
+ </div></div><div>
+ <div class="item"><b>b) Ângulos</b><br>
+ A=0, P₁=π/6, P₂=π/3, B=π/2, P₃=2π/3, P₄=5π/6, A'=π, P₅=7π/6, P₆=4π/3, B'=3π/2, P₇=5π/3, P₈=11π/6.</div>
+ <div class="item"><b>Observação</b><br>No 1º quadrante, seno e cosseno são positivos. No 3º quadrante, seno e cosseno são negativos.</div>
+ </div></div>`;
+ drawQ3();
+}
+function drawCircle(cx,cy,r,title,mode){
+ text(title,cx-r,cy-r-18,16);
+ ctx.save();ctx.strokeStyle="#111827";ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();arrow(cx-r-28,cy,cx+r+28,cy);arrow(cx,cy+r+28,cx,cy-r-28);ctx.restore();
+ text("cos",cx+r+34,cy-6,12);text("sen",cx+8,cy-r-34,12);text("0°",cx+r+6,cy+15,11);text("90°",cx+6,cy-r-6,11);text("180°",cx-r-42,cy+5,11);text("270°",cx+6,cy+r+20,11);
+ const pts=[["0",0],["π/6",Math.PI/6],["π/3",Math.PI/3],["π/2",Math.PI/2],["2π/3",2*Math.PI/3],["5π/6",5*Math.PI/6],["π",Math.PI],["7π/6",7*Math.PI/6],["4π/3",4*Math.PI/3],["3π/2",3*Math.PI/2],["5π/3",5*Math.PI/3],["11π/6",11*Math.PI/6]];
+ pts.forEach(([lab,a])=>{
+   if(mode==="all" || (mode==="q1" && a>=0 && a<=Math.PI/2) || (mode==="q3" && a>=Math.PI && a<=3*Math.PI/2)){
+     const x=cx+r*Math.cos(a),y=cy-r*Math.sin(a);
+     ctx.save();ctx.strokeStyle="#111827";ctx.lineWidth=1;rawLine(cx,cy,x,y);ctx.restore();
+     pointScreen(x,y,"",0,0);
+     let dx=Math.cos(a)>=0?6:-42, dy=Math.sin(a)>=0?-8:18;
+     text(lab,x+dx,y+dy,11);
+   }
+ });
+}
+function drawQ3(){
+ ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#fffdf7";ctx.fillRect(0,0,canvas.width,canvas.height);
+ text("Questão 3 — Círculo trigonométrico",20,32,20);
+ drawCircle(720,190,105,"Todos os pontos","all");
+ drawCircle(230,500,115,"1º quadrante","q1");
+ drawCircle(515,500,115,"3º quadrante","q3");
+ drawCircle(800,500,105,"Eixos","none");
+ text("sen π/6=1/2; cos π/6=√3/2",70,650,14);
+ text("sen π/3=√3/2; cos π/3=1/2",70,675,14);
+ text("sen 7π/6=-1/2; cos 7π/6=-√3/2",350,650,14);
+ text("sen 4π/3=-√3/2; cos 4π/3=-1/2",350,675,14);
+}
+
+/* Q4 */
+function q4(){
+ const func=$("func").value;
+ let ptsFinal=[], html="";
+ if(func==="cos"){
+  for(let x=-Math.PI;x<=3*Math.PI;x+=0.03)ptsFinal.push([x/Math.PI,-Math.cos(2*(x-Math.PI/2))-4]);
+  html=`<div class="duas"><div>
+  <div class="item"><b>a) Significado de a e k</b><br>a=π/2: deslocamento horizontal para a direita.<br>k=2: P=2π/2=π.</div>
+  <div class="item"><b>b) Sinal negativo</b><br>Reflexão em relação ao eixo médio.</div>
+  <div class="item"><b>c) b=-4</b><br>Desloca 4 unidades para baixo. Eixo médio: y=-4.</div></div>
+  <div><div class="item"><b>d) Fases</b><br>fase 1: f(x)=cos x<br>fase 2: f(x)=cos(2x)<br>fase 3: f(x)=cos 2(x-π/2)<br>fase 4: f(x)=-cos 2(x-π/2)<br>fase 5: f(x)=-cos 2(x-π/2)-4<br>fase 6: gráfico final</div>
+  <div class="item"><b>e) Domínio e imagem</b><br>Dom(f)=ℝ<br>Im(f)=[-5,-3]</div><div class="item"><b>f) Gráfico</b><br>Fases desenhadas abaixo.</div></div></div>`;
+ }else{
+  for(let x=-Math.PI;x<=3*Math.PI;x+=0.03)ptsFinal.push([x/Math.PI,-3*Math.sin(2*(x-Math.PI))+3]);
+  html=`<div class="duas"><div>
+  <div class="item"><b>a) Significado de a, k, c e b</b><br>a=π: desloca para direita.<br>k=2: P=π.<br>c=-3: amplitude 3 e reflexão.<br>b=3: sobe 3 unidades.</div>
+  <div class="item"><b>b) Sinal negativo</b><br>Reflexão em relação ao eixo médio y=3.</div>
+  <div class="item"><b>c) b=3</b><br>Translação vertical para cima.</div></div>
+  <div><div class="item"><b>d) Fases</b><br>fase 1: sen x<br>fase 2: sen(2x)<br>fase 3: sen 2(x-π)<br>fase 4: 3sen 2(x-π)<br>fase 5: -3sen 2(x-π)+3<br>fase 6: gráfico final</div>
+  <div class="item"><b>e) Domínio e imagem</b><br>Dom(f)=ℝ<br>Im(f)=[0,6]</div><div class="item"><b>f) Gráfico</b><br>Fases desenhadas abaixo.</div></div></div>`;
+ }
+ $("resolucao").innerHTML=html;
+ drawQ4(func);
+}
+function drawMiniAxes(x0,y0,w,h,title,yTicks=null,xTicks=true){
+ ctx.save();
+ ctx.strokeStyle="#111827";
+ ctx.lineWidth=1.4;
+
+ // eixo x e y
+ rawLine(x0,y0+h/2,x0+w,y0+h/2);
+ rawLine(x0,y0,x0,y0+h);
+
+ // setas
+ arrow(x0,y0+h/2,x0+w,y0+h/2);
+ arrow(x0,y0+h,x0,y0);
+
+ ctx.restore();
+
+ text(title,x0+6,y0+16,13);
+ text("x",x0+w+8,y0+h/2-6,12);
+ text("y",x0+8,y0+10,12);
+
+ if(xTicks){
+   const labs=[
+     ["0",0],
+     ["π/2",0.25],
+     ["π",0.5],
+     ["3π/2",0.75],
+     ["2π",1]
+   ];
+   labs.forEach(([lab,t])=>{
+     const px=x0+t*w;
+     ctx.save();
+     ctx.strokeStyle="#111827";
+     rawLine(px,y0+h/2-4,px,y0+h/2+4);
+     ctx.restore();
+     text(lab,px-10,y0+h/2+20,11);
+   });
+ }
+
+ if(yTicks){
+   yTicks.forEach(([lab,t])=>{
+     const py=y0+h - t*h;
+     ctx.save();
+     ctx.strokeStyle="#111827";
+     rawLine(x0-4,py,x0+4,py);
+     ctx.restore();
+     text(lab,x0-32,py+4,11);
+   });
+ }
+}
+
+function plotMini(x0,y0,w,h,func,minY,maxY,dashedLevels=[]){
+ // linhas tracejadas de referência
+ ctx.save();
+ ctx.strokeStyle="#777";
+ ctx.lineWidth=1;
+ ctx.setLineDash([5,5]);
+ dashedLevels.forEach(val=>{
+   const py=y0+h-(val-minY)/(maxY-minY)*h;
+   rawLine(x0,py,x0+w,py);
+ });
+ ctx.restore();
+
+ const xs=[];
+ for(let x=0;x<=2*Math.PI;x+=0.025)xs.push(x);
+ const ys=xs.map(func);
+
+ ctx.save();
+ ctx.strokeStyle="#111827";
+ ctx.lineWidth=1.8;
+ ctx.beginPath();
+ xs.forEach((x,i)=>{
+   let px=x0+x/(2*Math.PI)*w;
+   let py=y0+h-(ys[i]-minY)/(maxY-minY)*h;
+   if(i===0)ctx.moveTo(px,py);
+   else ctx.lineTo(px,py);
+ });
+ ctx.stroke();
+ ctx.restore();
+}
+
+function drawQ4(kind){
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.fillStyle="#fffdf7";
+ ctx.fillRect(0,0,canvas.width,canvas.height);
+
+ text("Questão 4 — fases do gráfico",20,32,20);
+
+ if(kind==="cos"){
+   // Gráfico 1: fases 1 e 2
+   drawMiniAxes(70,75,360,210,"Fases 1 e 2", [["-1",0],["0",0.5],["1",1]], true);
+   plotMini(70,75,360,210,x=>Math.cos(x),-1,1,[0]);
+   plotMini(70,75,360,210,x=>Math.cos(2*x),-1,1,[0]);
+   text("cos x",300,92,12);
+   text("cos 2x",300,110,12);
+
+   // Gráfico 2: fases 3 e 4
+   drawMiniAxes(550,75,360,210,"Fases 3 e 4", [["-1",0],["0",0.5],["1",1]], true);
+   plotMini(550,75,360,210,x=>Math.cos(2*(x-Math.PI/2)),-1,1,[0]);
+   plotMini(550,75,360,210,x=>-Math.cos(2*(x-Math.PI/2)),-1,1,[0]);
+   text("desloca π/2",760,92,12);
+   text("reflete",760,110,12);
+
+   // Gráfico final
+   drawMiniAxes(80,420,820,250,"Fase 5 / gráfico final", [["-5",0],["-4",0.5],["-3",1]], true);
+   plotMini(80,420,820,250,x=>-Math.cos(2*(x-Math.PI/2))-4,-5,-3,[-5,-4,-3]);
+   text("máx = -3",760,438,13);
+   text("eixo médio = -4",720,548,13);
+   text("mín = -5",760,660,13);
+   text("P = π",450,700,14);
+
+ }else{
+   // Gráfico 1: fases 1 e 2
+   drawMiniAxes(70,75,360,210,"Fases 1 e 2", [["-1",0],["0",0.5],["1",1]], true);
+   plotMini(70,75,360,210,x=>Math.sin(x),-1,1,[0]);
+   plotMini(70,75,360,210,x=>Math.sin(2*x),-1,1,[0]);
+   text("sen x",300,92,12);
+   text("sen 2x",300,110,12);
+
+   // Gráfico 2: fases 3 e 4
+   drawMiniAxes(550,75,360,210,"Fases 3 e 4", [["-3",0],["0",0.5],["3",1]], true);
+   plotMini(550,75,360,210,x=>Math.sin(2*(x-Math.PI)),-3,3,[0]);
+   plotMini(550,75,360,210,x=>3*Math.sin(2*(x-Math.PI)),-3,3,[-3,0,3]);
+   text("desloca π",760,92,12);
+   text("amplitude 3",760,110,12);
+
+   // Gráfico final
+   drawMiniAxes(80,420,820,250,"Fase 5 / gráfico final", [["0",0],["3",0.5],["6",1]], true);
+   plotMini(80,420,820,250,x=>-3*Math.sin(2*(x-Math.PI))+3,0,6,[0,3,6]);
+   text("máx = 6",760,438,13);
+   text("eixo médio = 3",720,548,13);
+   text("mín = 0",760,660,13);
+   text("P = π",450,700,14);
+ }
+}
+
+/* Q5 */
+function q5(){
+ const A=n("A"),C=n("C"),D=n("D"),E=n("E"),F=n("F");
+ const k=-E/(2*C), fourp=-D/C, pStd=fourp/4, profP=fourp/2, h=(C*k*k-F)/D;
+ const foco=[h+pStd,k], diretriz=h-pStd, A2=[h+pStd,k+profP], A3=[h+pStd,k-profP];
+ $("resolucao").innerHTML=`<div class="duas"><div><div class="item"><b>Equação dada</b><div class="formula">y² - 16x + 2y + 49 = 0</div></div>
+ <div class="item"><b>a) Equação reduzida</b><div class="formula">(y+1)²=16(x-3)</div></div>
+ <div class="item"><b>b) Elementos</b><br>V=${coord(h,k)}<br>2p=16 ⇒ p=8<br>p/2=4<br>F=${coord(foco[0],foco[1])}<br>Diretriz: x=${fmt(diretriz)}<br>Eixo: y=${fmt(k)}<br>LR=16</div></div>
+ <div><div class="item"><b>c) Paramétricas</b><div class="formula">x=t²/16+3<br>y=t-1</div></div><div class="item"><b>d) Gráfico</b><br>Gráfico abaixo.</div></div></div>`;
+ drawParabola(h,k,pStd,profP,"direita",A2,A3);
+}
+function drawParabola(h,k,pStd,profP,orient,A2,A3){
+ const range=15,w=base(range,"Parábola"),pts=[];
+ for(let t=-4;t<=4;t+=0.03)pts.push([h+pStd*t*t,k+2*pStd*t]);
+ curve(w,pts);
+ lineW(w,h-pStd,k-range,h-pStd,k+range,"diretriz",true,-42,-8);lineW(w,h-range,k,h+range,k,"eixo",true,20,-12);
+ point(w,h,k,"V",8,18);point(w,h+pStd,k,"F",8,-12);text("p/2",w.px(h)-42,w.py(k)+44,13);
+ lineW(w,A2[0],A2[1],A3[0],A3[1],"LR",false,8,0);point(w,A2[0],A2[1],"A₂",8,-8);point(w,A3[0],A3[1],"A₃",8,18);
+}
+
+/* Q6 */
+function q6(){
+ const f1=[n("f1x"),n("f1y")], f2=[n("f2x"),n("f2y")], eixo=n("eixo");
+ const h=(f1[0]+f2[0])/2,k=(f1[1]+f2[1])/2,c=Math.hypot(f2[0]-f1[0],f2[1]-f1[1])/2,a=eixo/2,b=Math.sqrt(a*a-c*c),vertical=true;
+ const A1=[h,k-a],A2=[h,k+a],B1=[h-b,k],B2=[h+b,k],denX=b*b,denY=a*a;
+ $("resolucao").innerHTML=`<div class="duas"><div>
+ <div class="item"><b>Dados da questão</b><br>F₁=(2,-1), F₂=(2,5), A₁A₂=10</div>
+ <div class="item"><b>a) Parâmetros e centro</b><br>C=${coord(h,k)}<br>a=5, b=4, c=3</div>
+ <div class="item"><b>b) Eixos e excentricidade</b><br>Eixo maior=10<br>Eixo menor=8<br>e=3/5=0,6</div>
+ <div class="item"><b>c) Extremos</b><br>A₁=${coord(A1[0],A1[1])}<br>A₂=${coord(A2[0],A2[1])}<br>B₁=${coord(B1[0],B1[1])}<br>B₂=${coord(B2[0],B2[1])}</div></div>
+ <div><div class="item"><b>d) Equações</b><div class="formula">(x-2)²/16 + (y-2)²/25 = 1</div><div class="formula">25x²+16y²-100x-64y-236=0</div></div>
+ <div class="item"><b>e) Paramétricas</b><div class="formula">x=2+4cosθ<br>y=2+5senθ</div></div><div class="item"><b>f) Gráfico</b></div></div></div>`;
+ drawElipse(h,k,a,b,c,A1,A2,B1,B2,f1,f2);
+}
+function drawElipse(h,k,a,b,c,A1,A2,B1,B2,f1,f2){
+ const w=base(12,"Elipse"),pts=[];for(let t=0;t<=Math.PI*2+0.02;t+=0.02)pts.push([h+b*Math.cos(t),k+a*Math.sin(t)]);
+ curve(w,pts);lineW(w,A1[0],A1[1],A2[0],A2[1],"eixo maior",true);lineW(w,B1[0],B1[1],B2[0],B2[1],"eixo menor",true);
+ point(w,h,k,"C",8,18);point(w,f1[0],f1[1],"F₁",8,18);point(w,f2[0],f2[1],"F₂",8,18);point(w,A1[0],A1[1],"A₁",8,18);point(w,A2[0],A2[1],"A₂",8,-10);point(w,B1[0],B1[1],"B₁",-26,-10);point(w,B2[0],B2[1],"B₂",8,-10);
+}
+
+/* Q7 */
+function q7(){
+ const h=4,k=-2,a=1,b=Math.sqrt(8),c=3,LR=16,v1=[3,-2],v2=[5,-2],F1=[1,-2],F2=[7,-2];
+ $("resolucao").innerHTML=`<div class="duas"><div>
+ <div class="item"><b>Dados da questão</b><br>V₁=(3,-2), V₂=(5,-2), F=(7,-2)</div>
+ <div class="item"><b>a) Gráfico e elementos</b><br>C=(4,-2)<br>A₁=(3,-2), A₂=(5,-2)<br>F₁=(1,-2), F₂=(7,-2)<br>a=1, b=2√2, c=3<br>LR=16</div>
+ <div class="item"><b>Equação reduzida</b><div class="formula">(x-4)²/1 - (y+2)²/8 = 1</div></div>
+ <div class="item"><b>Equação geral</b><div class="formula">8(x-4)² - (y+2)² = 8</div><div class="formula">8x² - y² - 64x - 4y + 116 = 0</div></div></div>
+ <div><div class="item"><b>b) Assíntotas e excentricidade</b><div class="formula">y+2 = 2√2(x-4)</div><div class="formula">y = 2√2x - 2(4√2+1)</div><div class="formula">y+2 = -2√2(x-4)</div><div class="formula">y = -2√2x + 2(4√2-1)</div>e=3</div>
+ <div class="item"><b>Paramétricas</b><div class="formula">x=4+secθ<br>y=-2+2√2tgθ</div></div></div></div>`;
+ drawHiper(h,k,a,b,c,v1,v2,F1,F2,LR);
+}
+function drawHiper(h,k,a,b,c,v1,v2,F1,F2,LR){
+ const w=base(15,"Hipérbole"),pts=[[],[],[],[]];
+ for(let x=h+a+0.05;x<=h+15;x+=0.05){let y=b*Math.sqrt((x-h)*(x-h)/(a*a)-1);pts[0].push([x,k+y]);pts[1].push([x,k-y])}
+ for(let x=h-a-0.05;x>=h-15;x-=0.05){let y=b*Math.sqrt((x-h)*(x-h)/(a*a)-1);pts[2].push([x,k+y]);pts[3].push([x,k-y])}
+ lineW(w,h-15,k-(b/a)*15,h+15,k+(b/a)*15,"",true);lineW(w,h-15,k+(b/a)*15,h+15,k-(b/a)*15,"",true);
+ lineW(w,h-a,k-b,h+a,k-b,"",true);lineW(w,h+a,k-b,h+a,k+b,"",true);lineW(w,h+a,k+b,h-a,k+b,"",true);lineW(w,h-a,k+b,h-a,k-b,"",true);
+ lineW(w,F1[0],k-LR/2,F1[0],k+LR/2,"LR",false,8,0);lineW(w,F2[0],k-LR/2,F2[0],k+LR/2,"LR",false,8,0);
+ pts.forEach(p=>curve(w,p));point(w,h,k,"C",6,20);point(w,v1[0],v1[1],"A₁",-28,18);point(w,v2[0],v2[1],"A₂",8,-12);point(w,F1[0],F1[1],"F₁",-28,18);point(w,F2[0],F2[1],"F₂",8,18);text("assíntotas",w.px(h+2),w.py(k+4),13);
+}
+
+/* Q8 */
+function q8(){
+ const h=n("cx"),k=n("cy"),l=n("cz"),r=n("r"),D=-2*h,E=-2*k,G=-2*l,F=h*h+k*k+l*l-r*r;
+ $("resolucao").innerHTML=`<div class="duas"><div>
+ <div class="item"><b>Dados da questão</b><br>Centro C=${coord3(h,k,l)}<br>Raio r=${fmt(r)}</div>
+ <div class="item"><b>Equação reduzida</b><div class="formula">${centerTerm("x",h)}² + ${centerTerm("y",k)}² + ${centerTerm("z",l)}² = ${fmt(r*r)}</div></div>
+ <div class="item"><b>Expansão</b><div class="formula">x² ${fsign(D)}x + ${fmt(h*h)} + y² ${fsign(E)}y + ${fmt(k*k)} + z² ${fsign(G)}z + ${fmt(l*l)} = ${fmt(r*r)}</div><div class="formula">x²+y²+z² ${fsign(D)}x ${fsign(E)}y ${fsign(G)}z ${F>=0?"+":"-"} ${fmt(Math.abs(F))}=0</div></div></div>
+ <div><div class="item"><b>Gráfico</b><br>Desenho em perspectiva igual ao caderno, com projeções de C.</div><div class="item"><b>Paramétricas da seção desenhada</b><div class="formula">x=2+2cosθ<br>y=-3+2senθ</div></div></div></div>`;
+ drawSphereStatic(h,k,l,r);
+}
+function drawSphereStatic(h,k,l,r){
+ ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#fffdf7";ctx.fillRect(0,0,canvas.width,canvas.height);text("Esfera",20,32,20);
+ const O={x:600,y:420},S=42;function proj(x,y,z){return{x:O.x+y*S-x*S*.85,y:O.y-z*S+x*S*.55}}
+ const C=proj(h,k,l),Pxy=proj(h,k,0),Py=proj(0,k,0),Px=proj(h,0,0),Pz=proj(0,0,l);
+ ctx.save();ctx.strokeStyle="#111827";ctx.lineWidth=2;arrow(proj(0,-5,0).x,proj(0,-5,0).y,proj(0,6,0).x,proj(0,6,0).y);text("y",proj(0,6,0).x+8,proj(0,6,0).y-6,16);arrow(proj(0,0,-1.5).x,proj(0,0,-1.5).y,proj(0,0,6).x,proj(0,0,6).y);text("z",proj(0,0,6).x+8,proj(0,0,6).y-6,16);arrow(proj(-1.5,0,0).x,proj(-1.5,0,0).y,proj(6,0,0).x,proj(6,0,0).y);text("x",proj(6,0,0).x-12,proj(6,0,0).y+18,16);ctx.restore();
+ pointScreen(O.x,O.y,"0",8,16);
+ ctx.save();ctx.strokeStyle="#111827";ctx.lineWidth=1.3;ctx.setLineDash([6,6]);rawLine(C.x,C.y,Pxy.x,Pxy.y);rawLine(Pxy.x,Pxy.y,Py.x,Py.y);rawLine(Pxy.x,Pxy.y,Px.x,Px.y);rawLine(C.x,C.y,Pz.x,Pz.y);ctx.restore();
+ text(fmt(l),Pz.x+8,Pz.y+4,13);text(fmt(k),Py.x-22,Py.y+14,13);text(fmt(h),Px.x-16,Px.y+18,13);
+ const R=r*S*.95;ctx.save();ctx.strokeStyle="#111827";ctx.lineWidth=2.3;ctx.beginPath();ctx.arc(C.x,C.y,R,0,Math.PI*2);ctx.stroke();ctx.setLineDash([5,5]);ctx.lineWidth=1.2;ctx.beginPath();ctx.ellipse(C.x,C.y,R,32,0,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.ellipse(C.x,C.y,42,R,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.lineWidth=.8;for(let i=-2;i<=2;i++){ctx.beginPath();ctx.ellipse(C.x+i*22,C.y,18,R*.95,0,0,Math.PI*2);ctx.stroke()}for(let j=-2;j<=2;j++){ctx.beginPath();ctx.ellipse(C.x,C.y+j*18,R*.92,20,0,0,Math.PI*2);ctx.stroke()}ctx.restore();
+ pointScreen(C.x,C.y,"C",8,-8);ctx.save();ctx.strokeStyle="#111827";ctx.lineWidth=1.4;ctx.setLineDash([4,4]);rawLine(C.x,C.y,C.x+R,C.y);ctx.restore();text("r="+fmt(r),C.x+R/2-8,C.y-10,13);
+ text("C = "+coord3(h,k,l),40,canvas.height-82,15);text("r = "+fmt(r),40,canvas.height-58,15);text("Equação geral: x² + y² + z² "+fsign(-2*h)+"x "+fsign(-2*k)+"y "+fsign(-2*l)+"z "+(h*h+k*k+l*l-r*r>=0?"+":"-")+" "+fmt(Math.abs(h*h+k*k+l*l-r*r))+" = 0",40,canvas.height-34,15);
+}
+function drawFunction(){} // não usado
+function baixar(){const link=document.createElement("a");link.download=`grafico_${q}_100.png`;link.href=canvas.toDataURL("image/png");link.click()}
+montar();resolver();
+</script>
+</body>
+</html>
